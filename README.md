@@ -25,3 +25,6 @@ WhatsApp comercial: +55 11 94978-9826.
 
 ## Imagens
 As imagens geradas por IA são representações ilustrativas e não fotografias oficiais da Apple. Antes de associá-las a um SKU, conferir o desenho do modelo, cor e câmera; não usar uma imagem genérica como prova do aparelho real.
+
+## Recuperação de publicação
+O código-fonte publicado está versionado neste repositório. Para reconstruir a publicação após perda dos arquivos no serviço de hospedagem, execute um novo deploy do branch `main` como Static Site, com diretório de publicação `.` e sem comando de build. O ponto de entrada é `index.html`.
