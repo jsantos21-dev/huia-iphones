@@ -79,4 +79,82 @@ modal('<div class="eyebrow">'+p.category+'</div><h2>'+p.name+' · '+p.storage+'<
 function contactProduct(id){const p=data[id];const selected=document.getElementById("chosenColor");const color=selected?selected.value:p.color;const message="Olá! Vim pelo site da HUIA e quero consultar este produto: "+p.name+", "+p.storage+", cor "+color+", categoria "+p.category+", preço anunciado "+fmt(p.price)+". Está disponível?";window.open("https://wa.me/5511949789826?text="+encodeURIComponent(message),"_blank","noopener")}
 function showContact(){window.open("https://wa.me/5511949789826?text="+encodeURIComponent("Olá, vim pelo site da HUIA IPHONE e quero consultar um aparelho."),"_blank","noopener")}
 render();
+
+window.HUIA_PRODUCTS=data.reduce((o,p)=>{o[p.id]={id:p.id,name:p.name,storage:p.storage,color:p.color,category:p.category,price:p.price};return o;},{});
+</script>
+<style>
+#huia-cart-fab{position:fixed;left:18px;bottom:22px;z-index:42;border:0;border-radius:999px;background:#101010;color:#fff;padding:14px 18px;font-size:11px;font-weight:800;letter-spacing:.08em;box-shadow:0 8px 28px #0003}
+#huia-cart-fab b{display:inline-grid;place-items:center;background:#b7f1ee;color:#101010;border-radius:50%;width:21px;height:21px;margin-left:8px}
+#huia-cart-panel{position:fixed;inset:0;background:#0009;z-index:70;display:none;justify-content:flex-end}
+#huia-cart-panel.open{display:flex}
+.huia-cart-sheet{background:#fff;width:min(480px,100%);height:100%;overflow:auto;padding:25px;box-shadow:-15px 0 40px #0002}
+.huia-cart-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;padding-bottom:16px}
+.huia-cart-head h2{font-size:24px;margin:0;letter-spacing:-.06em}
+.huia-cart-close{border:0;background:#f2f2f2;border-radius:50%;width:36px;height:36px;font-size:20px}
+.huia-cart-item{display:grid;grid-template-columns:1fr auto;gap:10px;padding:18px 0;border-bottom:1px solid #eee;font-size:12px}
+.huia-cart-item small{display:block;color:#777;margin-top:5px}
+.huia-qty{display:flex;align-items:center;gap:9px;margin-top:10px}
+.huia-qty button{border:1px solid #ddd;background:white;border-radius:50%;width:27px;height:27px}
+.huia-cart-total{display:flex;justify-content:space-between;font-weight:850;font-size:16px;padding:20px 0}
+.huia-cart-action{width:100%;border:0;background:#090909;color:white;border-radius:99px;padding:15px;font-size:10px;font-weight:850;letter-spacing:.1em;margin-top:9px}
+.huia-add{width:100%;border:1px solid #111;background:#fff;color:#111;border-radius:99px;padding:13px;font-size:10px;font-weight:850;letter-spacing:.08em;margin-top:9px}
+.huia-add:hover{background:#eef9f8}
+.huia-checkout{display:none;margin-top:18px;padding-top:18px;border-top:1px solid #eee}
+.huia-checkout.open{display:block}
+.huia-checkout label{display:block;font-size:11px;margin:12px 0}
+.huia-checkout input,.huia-checkout textarea{display:block;width:100%;border:1px solid #ddd;border-radius:10px;padding:12px;margin-top:6px}
+@media(max-width:620px){#huia-cart-fab{left:12px;bottom:12px;padding:12px 14px}.huia-cart-sheet{padding:20px}}
+</style>
+<button id="huia-cart-fab" type="button" onclick="huiaOpenCart()">CARRINHO <b id="huia-cart-count">0</b></button>
+<div id="huia-cart-panel" onclick="if(event.target===this)huiaCloseCart()"><section class="huia-cart-sheet"><div class="huia-cart-head"><h2>Seu carrinho</h2><button class="huia-cart-close" onclick="huiaCloseCart()">×</button></div><div id="huia-cart-lines"></div><div class="huia-cart-total"><span>Total anunciado</span><span id="huia-cart-total">R$ 0</span></div><p style="font-size:10px;color:#777;line-height:1.7">O carrinho é salvo neste navegador. O envio do pedido é feito pelo WhatsApp; nenhum pagamento é processado nesta página.</p><button class="huia-cart-action" onclick="huiaCheckoutOpen()">CONTINUAR PELO WHATSAPP</button><div id="huia-checkout" class="huia-checkout"><h3>Seus dados para atendimento</h3><label>Nome<input id="huia-customer-name" placeholder="Seu nome"></label><label>Observações<textarea id="huia-customer-note" rows="3" placeholder="CEP, preferência de entrega ou dúvidas"></textarea></label><button class="huia-cart-action" onclick="huiaSendOrder()">ENVIAR PEDIDO PELO WHATSAPP</button></div></section></div>
+<script>
+(function(){
+const KEY='huia_cart_2026';
+let cart=[];try{cart=JSON.parse(localStorage.getItem(KEY)||'[]')}catch{cart=[]}
+const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+function save(){localStorage.setItem(KEY,JSON.stringify(cart));draw()}
+function draw(){
+ const count=cart.reduce((s,x)=>s+x.qty,0),total=cart.reduce((s,x)=>s+x.price*x.qty,0);
+ document.getElementById('huia-cart-count').textContent=count;
+ document.getElementById('huia-cart-total').textContent=money(total);
+ const el=document.getElementById('huia-cart-lines');
+ el.innerHTML=cart.length?cart.map((p,i)=>'<div class="huia-cart-item"><div><b>'+p.name+'</b><small>'+p.storage+' · '+p.color+' · '+p.category+'</small><div class="huia-qty"><button onclick="huiaQty('+i+',-1)">−</button><b>'+p.qty+'</b><button onclick="huiaQty('+i+',1)">+</button><button onclick="huiaRemove('+i+')" aria-label="Remover">×</button></div></div><b>'+money(p.price*p.qty)+'</b></div>').join(''):'<p style="padding:25px 0;color:#777;font-size:12px">Seu carrinho está vazio. Abra um produto e adicione ao carrinho.</p>';
+}
+window.huiaOpenCart=()=>document.getElementById('huia-cart-panel').classList.add('open');
+window.huiaCloseCart=()=>document.getElementById('huia-cart-panel').classList.remove('open');
+window.huiaQty=(i,d)=>{if(!cart[i])return;cart[i].qty+=d;if(cart[i].qty<1)cart.splice(i,1);save()};
+window.huiaRemove=i=>{cart.splice(i,1);save()};
+window.huiaCheckoutOpen=()=>{if(!cart.length){alert('Adicione um produto ao carrinho primeiro.');return}document.getElementById('huia-checkout').classList.add('open')};
+window.huiaSendOrder=()=>{
+ if(!cart.length)return;
+ const name=document.getElementById('huia-customer-name').value.trim();
+ const note=document.getElementById('huia-customer-note').value.trim();
+ if(!name){alert('Informe seu nome para continuar.');return}
+ const total=cart.reduce((s,x)=>s+x.price*x.qty,0);
+ const lines=cart.map(x=>x.qty+'x '+x.name+' '+x.storage+' ('+x.color+') — '+money(x.price*x.qty)).join('\n');
+ const msg='Olá! Meu nome é '+name+'. Quero consultar este pedido na HUIA IPHONE:\n'+lines+'\nTotal anunciado: '+money(total)+'\nObservações: '+(note||'Não informado')+'\nPor favor, confirme estoque, valores e formas de pagamento.';
+ window.open('https://wa.me/5511949789826?text='+encodeURIComponent(msg),'_blank','noopener');
+};
+window.huiaAddToCart=(id)=>{
+ const p=window.HUIA_PRODUCTS&&window.HUIA_PRODUCTS[id];
+ if(!p)return;
+ const existing=cart.find(x=>x.id===id);
+ if(existing)existing.qty++;else cart.push({...p,qty:1});
+ save();
+ document.getElementById('huia-cart-panel').classList.add('open');
+};
+const originalDetail=window.detail;
+window.detail=function(id){
+ originalDetail(id);
+ setTimeout(()=>{
+  const body=document.getElementById('modalBody');
+  if(!body||body.querySelector('[data-huia-add]'))return;
+  const p=window.HUIA_PRODUCTS&&window.HUIA_PRODUCTS[id];if(!p)return;
+  const b=document.createElement('button');b.className='huia-add';b.dataset.huiaAdd='1';b.textContent='ADICIONAR AO CARRINHO';
+  b.onclick=()=>{const chosen=document.getElementById('chosenColor');const color=chosen?chosen.value:p.color;const item={...p,color};const old=cart.find(x=>x.id===id&&x.color===color);if(old)old.qty++;else cart.push({...item,qty:1});save();document.getElementById('huia-cart-panel').classList.add('open')};
+  const wa=body.querySelector('.buy');if(wa)wa.parentNode.insertBefore(b,wa);else body.appendChild(b);
+ },0);
+};
+draw();
+})();
 </script></body></html>
