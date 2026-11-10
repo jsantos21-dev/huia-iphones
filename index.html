@@ -227,6 +227,8 @@ render();setTheme(initialTheme);
 
 async function syncStoreAvailability(){try{const response=await fetch('https://llrslwyrybkvliuuxtut.supabase.co/rest/v1/rpc/huia_public_store_status',{method:'POST',headers:{'Content-Type':'application/json','apikey':'sb_publishable_Q3QNTvL6jefIZzkWLJIO_Q_eWpyTpGt','Authorization':'Bearer sb_publishable_Q3QNTvL6jefIZzkWLJIO_Q_eWpyTpGt'},body:'{}',cache:'no-store'});if(!response.ok)return;const status=await response.json();const overlay=document.getElementById('storeStateOverlay');if(!overlay)return;if(status.mode==='active'){overlay.classList.remove('active');document.body.style.overflow='';return;}const updating=status.mode==='updating';document.getElementById('storeStateIcon').textContent=updating?'↻':'⚙';document.getElementById('storeStateTitle').textContent=updating?'Estamos atualizando a loja':'Loja em manutenção';document.getElementById('storeStateMessage').textContent=status.notice||(updating?'Estamos fazendo melhorias. Voltamos em breve.':'Estamos realizando uma manutenção. Voltamos em breve.');overlay.classList.add('active');document.body.style.overflow='hidden';}catch(error){console.warn('Não foi possível consultar o status da loja.',error)}}
 syncStoreAvailability();
+setInterval(syncStoreAvailability,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncStoreAvailability()});
 </script>
 <div id="storeStateOverlay" class="store-state-overlay" role="status" aria-live="polite"><div class="store-state-card"><div class="store-state-icon" id="storeStateIcon">⚙</div><h1 id="storeStateTitle">Estamos preparando novidades</h1><p id="storeStateMessage">A loja está temporariamente indisponível.</p><small>HUIA PHONES</small></div></div>
 </body>
